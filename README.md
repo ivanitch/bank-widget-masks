@@ -26,21 +26,20 @@ poetry install
 ## Запуск проверок
 ```bash
 # # Проверка стиля кода (PEP 8)
-flake8 src/
+flake8 main.py src/
 
 # Автоформатирование кода
-black src/
+black main.py src/
 
 # Сортировка импортов
-isort src/
+isort main.py src/
 
 # Проверка типов
-mypy src/
+mypy main.py src/
 ```
 
 ## 🚀 Запуск
 
 ```bash
-python -m src.main
+python main.py
 ```
-
