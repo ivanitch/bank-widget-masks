@@ -41,6 +41,6 @@ mypy src/
 ## 🚀 Запуск
 
 ```bash
-python -m src.main
+python main.py
 ```
 
