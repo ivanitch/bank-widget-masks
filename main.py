@@ -13,19 +13,40 @@ try:
     # Маскировка номера карты
     card = "Visa Platinum 7000792289606361"
     masked_card = mask_account_card(card)
-    print(masked_card)  # Вывод: Visa Platinum 7000 79** **** 6361
+
+    print("=" * 70)
+    print("ДЕМОНСТРАЦИЯ МОДУЛЯ WIDGET")
+    print("=" * 70)
+
+    print(f"Исходная карта: {card}")
+    print(f"Замаскированная карта: {masked_card}")
+
+    print()
 
     # Маскировка номера счета
     account = "Счет 73654108430135874305"
     masked_account = mask_account_card(account)
-    print(masked_account)  # Вывод: Счет **4305
+
+    print(f"Исходный счет: {account}")
+    print(f"Замаскированный счет: {masked_account}")
+
+    print()
 
     # Преобразует дату из ISO-формата в формат ДД.ММ.ГГГГ
     date_iso = "2026-01-21T02:26:18.671407"
     date_formated = get_date(date_iso)
-    print(date_formated)
+
+    print(f"Дата ISO: {date_iso}")
+    print(f"Дата отформатирована: {date_formated}")
 
     print()
+
+    print("=" * 70)
+    print("ДЕМОНСТРАЦИЯ МОДУЛЯ PROCESSING")
+    print("=" * 70)
+
+    print("Фильтрация операций по статусу")
+    print("-" * 70)
 
     # Фильтрация выполненных операций
     executed_ops = filter_by_state(processing_operations, state="EXECUTED")
@@ -42,6 +63,7 @@ try:
     for op in sorted_asc:
         formatted_date = get_date(op["date"])
         print(f"  • Дата: {formatted_date}, ID: {op['id']}, Статус: {op['state']}")
+
     print()
 
 except ValueError as e:

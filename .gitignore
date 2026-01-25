@@ -2,4 +2,4 @@ __pycache__/
 .poetry/
 .venv/
 .idea/
-/src/test.py
+/test.py
