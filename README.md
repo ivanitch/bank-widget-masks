@@ -311,6 +311,9 @@ python main.py
 ## Тестирование
 
 ```bash
+# Запуск всех тестов
+pytest tests/
+
 # Запуск всех тестов с подробным выводом
 pytest tests/ -v
 
@@ -318,9 +321,15 @@ pytest tests/ -v
 pytest tests/ -v --cov=src --cov-report=html
 
 # Запуск конкретного тестового файла
-pytest tests/test_masks.py -v
+pytest tests/test_masks.py
+pytest tests/test_widget.py
+pytest tests/test_processing.py
 ```
 
+![Image alt](data/10_2_test.png)
+
+
+![Image alt](data/10_2_test_cov.png)
 ---
 
 ## Проверка качества кода
@@ -330,7 +339,11 @@ pytest tests/test_masks.py -v
 Проверка соответствия коду стандарту PEP 8:
 
 ```bash
-flake8 main.py src/
+flake8 src/ tests/
+
+#flake8 main.py
+#flake8 src/
+#flake8 main.py src/
 ```
 
 ### Форматирование (Black)
@@ -338,11 +351,16 @@ flake8 main.py src/
 Автоматическое форматирование кода:
 
 ```bash
-# Проверка без изменений
-black --check main.py src/
+# Форматирование файлов проекта и тестов
+black src/ tests/
 
-# Форматирование файлов
-black main.py src/
+# Проверка без изменений
+black --check src/ tests/
+
+# Примеры
+#black main.py
+#black src/
+#black main.py src/
 ```
 
 ### Сортировка импортов (isort)
@@ -350,10 +368,15 @@ black main.py src/
 Упорядочивание импортов:
 
 ```bash
+# Сортировка импортов в проекте и в тестах
+isort src/ tests/
+
 # Проверка без изменений
-isort --check-only main.py src/
+isort --check-only src/ tests/
 
 # Сортировка импортов
+isort main.py
+isort src/
 isort main.py src/
 ```
 
@@ -368,10 +391,15 @@ mypy main.py src/
 ### Запуск всех проверок одной командой
 
 ```bash
-flake8 main.py src/ && \
-black --check main.py src/ && \
-isort --check-only main.py src/ && \
-mypy main.py src/
+flake8 src/ tests/ && \
+black src/ tests/ && \
+isort src/ tests/ && \
+mypy src/ tests/
+```
+
+Или можно запустить скрипт:
+```bash
+./lint.sh
 ```
 
 ## Примеры использования
@@ -455,13 +483,16 @@ all_operations = [...]  # ваши данные
 display_recent_operations(all_operations, n=10)
 ```
 
-## 🔗 Полезные ссылки
+## Полезные ссылки
 
 - [Документация Python](https://docs.python.org/3/)
 - [Poetry Documentation](https://python-poetry.org/docs/)
 - [PEP 8 Style Guide](https://pep8.org/)
 - [pytest Documentation](https://docs.pytest.org/)
 - [PCI DSS Requirements](https://www.pcisecuritystandards.org/)
+- [Python Testing with pytest (Brian Okken)](https://tisten.ir/blog/wp-content/uploads/2019/01/Python-Testing-with-pytest-Pragmatic-Bookshelf-2017-Brian-Okken.pdf)
+- [Pytest-Cheatsheet](https://github.com/mananrg/Pytest-Cheatsheet)
+- [Раздел про тестирование в Hitchhiker's Guide to Python](https://docs.python-guide.org/writing/tests/)
 
 ---
 
