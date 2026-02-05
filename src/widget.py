@@ -12,6 +12,9 @@ def mask_account_card(payment_info: str) -> str:
     "Maestro 7000792289606361"           → "Maestro 7000 79** **** 6361"
     "Счет 73654108430135874305"          → "Счет **4305"
     """
+    if not payment_info or not str(payment_info):
+        raise ValueError("Платежная информация отсутствует или пуста")
+
     parts = payment_info.strip().split(" ")
     if len(parts) < 2:
         raise ValueError(f"Некорректный формат строки {payment_info}")
@@ -40,8 +43,10 @@ def get_date(date_str: str) -> str:
     Поддерживает как полные ISO-строки (с временем), так и просто дату "2024-03-11".
     """
     try:
-        # datetime.fromisoformat понимает и "2024-03-11", и полную строку с временем
-        dt = datetime.fromisoformat(date_str)
+        str_date = str(date_str)
+        clean_date = str_date.replace(" ", "")
+        dt = datetime.fromisoformat(clean_date)
+
         return dt.strftime("%d.%m.%Y")
     except ValueError as e:
         raise ValueError(f"Некорректный формат даты: {date_str}") from e

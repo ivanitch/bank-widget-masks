@@ -40,3 +40,41 @@ def invalid_card_accounts():
         "",  # пусто
         None,  # None
     ]
+
+
+@pytest.fixture
+def payment_info():
+    return [
+        ("Visa Platinum 7000792289606361", "Visa Platinum 7000 79** **** 6361"),
+        ("Maestro 7000792289606361", "Maestro 7000 79** **** 6361"),
+        ("Счет 73654108430135874305", "Счет **4305"),
+    ]
+
+
+@pytest.fixture
+def invalid_payment_info():
+    return [
+        None,
+        "",
+        "Visa Platinum",
+        "Счет",
+        "Счет **4305",
+        "7000792289606361",
+    ]
+
+
+@pytest.fixture
+def dates():
+    return [
+        ("2026-02-01T02:32:02.000Z", "01.02.2026"),
+        ("2026-02-05T02:32:02.379Z", "05.02.2026"),
+    ]
+
+
+@pytest.fixture
+def invalid_dates():
+    return [
+        "2023/10/25T14:30:00",
+        "2023-10-25T14:30:00 GMT+3",
+        "2023-02-30T10:00:00",
+    ]
