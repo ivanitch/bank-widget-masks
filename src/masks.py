@@ -15,7 +15,7 @@ def get_mask_card_number(card_number: str) -> str:
 
     Аргументы:
         card_number (str): Номер банковской карты (16 цифр без пробелов).
-                          Пример: "7000792289606361"
+                           Пример: "7000792289606361"
 
     Возвращает:
         str: Замаскированный номер карты в формате "XXXX XX** **** XXXX".
@@ -24,28 +24,23 @@ def get_mask_card_number(card_number: str) -> str:
     Пример:
         >>> get_mask_card_number("7000792289606361")
     """
-
-    # Приводим к строке
     str_cart_number = str(card_number)
-
-    # Удаляем все пробелы
     clean_number = str_cart_number.replace(" ", "")
 
-    # Проверяем, что номер содержит достаточно цифр
-    if len(clean_number) < 16:
-        raise ValueError(f"Номер карты должен содержать минимум 16 цифр, получено: {len(clean_number)}")
+    if not clean_number or not str(clean_number):
+        raise ValueError("Номер карты отсутствует или пуст")
 
-    # Извлекаем нужные части номера:
-    # - первые 4 цифры (блок 1)
-    # - следующие 2 цифры из второго блока (цифры 5-6)
-    # - последние 4 цифры (блок 4)
+    if len(clean_number) != 16:
+        raise ValueError("Номер карты должен содержать 16 цифр")
+
+    if not clean_number.isdigit():
+        raise ValueError("Номер карты должен содержать только цифры")
+
     first_block = clean_number[:4]  # Первые 4 цифры: "7000"
     second_partial = clean_number[4:6]  # Следующие 2 цифры: "79"
     last_block = clean_number[-4:]  # Последние 4 цифры: "6361"
 
-    masked_number = f"{first_block} {second_partial}** **** {last_block}"
-
-    return masked_number
+    return f"{first_block} {second_partial}** **** {last_block}"
 
 
 def get_mask_account(account_number: str) -> str:
@@ -57,7 +52,7 @@ def get_mask_account(account_number: str) -> str:
 
     Аргументы:
         account_number (str): Номер банковского счета (обычно 20 цифр).
-                             Пример: "73654108430135874305"
+                              Пример: "73654108430135874305"
 
     Возвращает:
         str: Замаскированный номер счета в формате "**XXXX".
@@ -71,19 +66,19 @@ def get_mask_account(account_number: str) -> str:
         - Всегда скрывает все цифры, кроме последних 4
         - Две звездочки показывают наличие скрытых цифр
     """
-    # Приводим к строке
     str_account_number = str(account_number)
-
-    # Удаляем все пробелы
     clean_number = str_account_number.replace(" ", "")
 
-    # Номер содержит минимум 4 цифры
+    if not clean_number or not str(clean_number):
+        raise ValueError("Номер счета отсутствует или пуст")
+
     if len(clean_number) < 4:
-        raise ValueError(f"Номер счета должен содержать минимум 4 цифры, получено: {len(clean_number)}")
+        raise ValueError("Номер счета должен содержать минимум 4 цифры")
+
+    if not clean_number.isdigit():
+        raise ValueError("Номер счета должен содержать только цифры")
 
     # Извлекаем последние 4 цифры
     last_four = clean_number[-4:]
 
-    masked_account = f"**{last_four}"
-
-    return masked_account
+    return f"**{last_four}"
