@@ -51,21 +51,26 @@ IT-отдел крупного банка разрабатывает новый 
 ```
 bank-widget-masks/
 │
-├── src/                           # Исходный код проекта
+├── src/                          # Исходный код проекта
 │   ├── __init__.py               # Инициализация пакета
 │   ├── masks.py                  # Функции маскирования
 │   ├── widget.py                 # Функции виджета
 │   ├── processing.py             # Функции обработки операций
-│   └── generators.py             # Генераторы для работы с данными
+│   ├── generators.py             # Генераторы для работы с данными
+│   └── decorators.py             # Декораторы для логирования
 │
-├── tests/                         # Тесты проекта
+├── tests/                        # Тесты проекта
 │   ├── __init__.py               # Инициализация пакета тестов
 │   ├── test_masks.py             # Тесты для masks
 │   ├── test_widget.py            # Тесты для widget
 │   ├── test_processing.py        # Тесты для processing
-│   └── test_generators.py        # Тесты для generators
+│   ├── test_generators.py        # Тесты для generators
+│   └── test_decorators.py        # Тесты для decorators
 │
-├── main.py                        # Главный файл с демонстрацией
+├── log/                          # Директория для лог-файлов
+│   └── app.log                   # Лог по умолчанию
+│
+├── main.py                       # Главный файл с демонстрацией
 ├── pyproject.toml                # Конфигурация Poetry и зависимостей
 ├── .flake8                       # Конфигурация линтера
 ├── .gitignore                    # Игнорируемые файлы для Git
@@ -263,6 +268,29 @@ for card in card_number_generator(1, 5):
 
 ---
 
+### Модуль `decorators.py`
+
+#### `@log(filename="app.log")`
+
+Декоратор для автоматического логирования выполнения функций.
+
+**Примеры:**
+
+```python
+from src.decorators import log
+
+
+@log(filename="mylog.txt")
+def my_function(x, y):
+    return x + y
+
+
+my_function(1, 2)  # Успешно
+# В mylog.txt: my_function stop
+```
+
+---
+
 ## 🎮 Запуск проекта
 
 ### Демонстрация всех функций
@@ -279,6 +307,7 @@ python main.py
 - Генераторы для работы с данными
 - Фильтрация по валюте
 - Генерация номеров карт
+- Логирование выполнения функций
 
 ---
 
@@ -298,6 +327,7 @@ pytest tests -v --cov=src --cov-report=html
 # Запуск конкретного тестового файла
 pytest tests/test_masks.py -v
 pytest tests/test_generators.py -v
+pytest tests/test_decorators.py -v
 ```
 
 ### Тестовое покрытие
@@ -308,6 +338,7 @@ pytest tests/test_generators.py -v
 - `test_widget.py` - тесты для виджета
 - `test_processing.py` - тесты для обработки
 - `test_generators.py` - тесты для генераторов
+- `test_decorators.py` - тесты для декораторов
 
 Посмотреть отчет в консоли или красивый HTML-отчет
 

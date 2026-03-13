@@ -5,6 +5,7 @@ from src.generators import (
     transaction_descriptions,
     card_number_generator,
 )
+from src.decorators import log
 
 
 def main():
@@ -141,6 +142,58 @@ def main():
         print("-" * 70)
         for card_num in card_number_generator(1, 5):
             print(f"  {card_num}")
+        print()
+
+        print("=" * 70)
+        print("ДЕМОНСТРАЦИЯ МОДУЛЯ DECORATORS")
+        print("=" * 70)
+        print()
+
+        # Функции с декораторами для демонстрации
+        @log()
+        def transfer_money(amount, from_account, to_account):
+            """Перевод денег между счетами (логирование в консоль)."""
+            return f"Переведено {amount} руб. с {from_account} на {to_account}"
+
+        @log(filename="operations.log")
+        def calculate_commission(amount, rate=0.01):
+            """Расчёт комиссии (логирование в файл)."""
+            return amount * rate
+
+        @log()
+        def risky_operation(value):
+            """Операция с возможной ошибкой."""
+            if value == 0:
+                raise ValueError("Значение не может быть нулевым")
+            return 100 / value
+
+        print("📝 Логирование в консоль")
+        print("-" * 70)
+        print("Вызов функции transfer_money(1000, 'Счет1', 'Счет2'):")
+        result = transfer_money(1000, "Счет1", "Счет2")
+        print(f"Результат: {result}")
+        print()
+
+        print("📁 Логирование в файл (operations.log)")
+        print("-" * 70)
+        print("Вызов функции calculate_commission(5000, 0.015):")
+        commission = calculate_commission(5000, 0.015)
+        print(f"Комиссия: {commission} руб.")
+        print("(Логи записаны в /log/operations.log)")
+        print()
+
+        print("⚠️ Логирование ошибки")
+        print("-" * 70)
+        print("Вызов функции risky_operation(10) — успешно:")
+        result_ok = risky_operation(10)
+        print(f"Результат: {result_ok}")
+        print()
+
+        print("Вызов функции risky_operation(0) — с ошибкой:")
+        try:
+            risky_operation(0)
+        except ValueError as e:
+            print(f"Поймана ошибка: {e}")
         print()
 
         print("=" * 70)
