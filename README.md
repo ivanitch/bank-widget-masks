@@ -1,11 +1,11 @@
-# 🏦 Bank Widget Masks
+# Bank Widget Masks
 
 Учебный проект для курса по Python. Реализует функции маскирования банковских данных, обработки операций и работы с
 генераторами для виджета личного кабинета пользователя банка.
 
 ---
 
-## 📋 Цель проекта
+## Цель проекта
 
 IT-отдел крупного банка разрабатывает новый виджет для личного кабинета клиента. Виджет отображает последние банковские
 операции клиента, но для обеспечения безопасности необходимо:
@@ -15,13 +15,16 @@ IT-отдел крупного банка разрабатывает новый 
 3. **Сортировать операции** - по дате для удобного отображения
 4. **Форматировать даты** - в понятный для пользователя формат
 5. **Эффективно обрабатывать большие объёмы данных** - через генераторы
+6. **Декорировать функции** - через декораторы
+7. **Читать данные из JSON-файлов** - загрузка списка транзакций из файла
+8. **Конвертировать валюты** - получение актуального курса через внешний API
 
 Проект демонстрирует практическое применение Python для решения реальных задач финтех-индустрии с соблюдением стандартов
 безопасности данных (PCI DSS).
 
 ---
 
-## 🎯 Функциональность
+## Функциональность
 
 ### Модуль `masks.py` - Маскирование данных
 
@@ -44,9 +47,21 @@ IT-отдел крупного банка разрабатывает новый 
 - **Генератор описаний транзакций** - поочерёдная выдача описаний операций
 - **Генератор номеров банковских карт** - создание номеров в формате XXXX XXXX XXXX XXXX
 
+### Модуль `decorators.py` - Декораторы функций
+
+- **Логирование процесса выполнения функций** - записывает в файл или выводит в консоль результат выполнения функции
+
+### Модуль `utils.py` - Утилиты для работы с данными
+
+- **Чтение транзакций из JSON-файла** - загружает список операций, возвращает пустой список при отсутствии файла или некорректных данных
+
+### Модуль `external_api.py` - Работа с внешним API
+
+- **Конвертация суммы транзакции в рубли** - возвращает сумму в RUB; для USD и EUR обращается к Exchange Rates Data API за актуальным курсом
+
 ---
 
-## 📁 Структура проекта
+## Структура проекта
 
 ```
 bank-widget-masks/
@@ -57,7 +72,9 @@ bank-widget-masks/
 │   ├── widget.py                 # Функции виджета
 │   ├── processing.py             # Функции обработки операций
 │   ├── generators.py             # Генераторы для работы с данными
-│   └── decorators.py             # Декораторы для логирования
+│   ├── decorators.py             # Декораторы
+│   ├── utils.py                  # Утилиты: чтение JSON-файлов
+│   └── external_api.py           # Конвертация валют через внешний API
 │
 ├── tests/                        # Тесты проекта
 │   ├── __init__.py               # Инициализация пакета тестов
@@ -65,13 +82,20 @@ bank-widget-masks/
 │   ├── test_widget.py            # Тесты для widget
 │   ├── test_processing.py        # Тесты для processing
 │   ├── test_generators.py        # Тесты для generators
-│   └── test_decorators.py        # Тесты для decorators
+│   ├── test_decorators.py        # Тесты для decorators
+│   ├── test_utils.py             # Тесты для utils
+│   └── test_external_api.py      # Тесты для external_api
+│
+├── data/                         # Данные проекта
+│   └── operations.json           # Файл с банковскими операциями
 │
 ├── log/                          # Директория для лог-файлов
 │   └── app.log                   # Лог по умолчанию
 │
 ├── main.py                       # Главный файл с демонстрацией
 ├── pyproject.toml                # Конфигурация Poetry и зависимостей
+├── .env                          # Переменные окружения (не хранится в Git)
+├── .env.template                 # Шаблон переменных окружения
 ├── .flake8                       # Конфигурация линтера
 ├── .gitignore                    # Игнорируемые файлы для Git
 └── README.md                     # Документация проекта
@@ -79,14 +103,14 @@ bank-widget-masks/
 
 ---
 
-## 💻 Требования
+## Требования
 
 - **Python**: 3.11 или выше
 - **Poetry**: для управления зависимостями
 
 ---
 
-## 🚀 Установка и настройка
+## Установка и настройка
 
 ### Шаг 1: Клонирование репозитория
 
@@ -109,12 +133,29 @@ poetry install
 После выполнения этих команд Poetry:
 
 - Создаст виртуальное окружение
-- Установит все необходимые библиотеки (pytest, flake8, black, isort, mypy)
+- Установит все необходимые библиотеки (pytest, flake8, black, isort, mypy, requests, python-dotenv)
 - Подготовит проект к работе
+
+### Шаг 3: Настройка переменных окружения
+
+```bash
+# Создайте файл .env из шаблона
+cp .env.template .env
+```
+
+Откройте `.env` и укажите API-ключ для конвертации валют:
+
+```
+EXCHANGE_RATES_API_KEY=your_api_key_here
+```
+
+Получить ключ можно бесплатно на [apilayer.com](https://apilayer.com/marketplace/exchangerates_data-api).
+
+> Файл `.env` добавлен в `.gitignore` и не попадает в репозиторий.
 
 ---
 
-## 📚 Описание функций
+## Описание функций
 
 ### Модуль `masks.py`
 
@@ -291,7 +332,60 @@ my_function(1, 2)  # Успешно
 
 ---
 
-## 🎮 Запуск проекта
+### Модуль `utils.py`
+
+#### `get_transactions_from_json(file_path: str) -> list[dict]`
+
+Читает JSON-файл и возвращает список словарей с данными о транзакциях.
+Если файл не найден, пустой, содержит не список или невалидный JSON — возвращает пустой список.
+
+**Пример:**
+
+```python
+from src.utils import get_transactions_from_json
+
+transactions = get_transactions_from_json("data/operations.json")
+print(len(transactions))  # 5
+
+# Файл не существует — безопасный возврат
+empty = get_transactions_from_json("data/missing.json")
+print(empty)  # []
+```
+
+---
+
+### Модуль `external_api.py`
+
+#### `convert_transaction_amount(transaction: dict) -> float`
+
+Возвращает сумму транзакции в рублях. Если валюта RUB — возвращает исходную сумму.
+Если валюта USD или EUR — обращается к Exchange Rates Data API для получения актуального курса.
+
+**Пример:**
+
+```python
+from src.external_api import convert_transaction_amount
+
+# RUB — без обращения к API
+rub_transaction = {
+    "operationAmount": {
+        "amount": "5000.00",
+        "currency": {"name": "руб.", "code": "RUB"}
+    }
+}
+print(convert_transaction_amount(rub_transaction))  # 5000.0
+
+# USD — с конвертацией через API
+usd_transaction = {
+    "operationAmount": {
+        "amount": "100.00",
+        "currency": {"name": "USD", "code": "USD"}
+    }
+}
+print(convert_transaction_amount(usd_transaction))  # например, 9150.0
+```
+
+Требует заполненного `EXCHANGE_RATES_API_KEY` в файле `.env`.
 
 ### Демонстрация всех функций
 
@@ -308,10 +402,12 @@ python main.py
 - Фильтрация по валюте
 - Генерация номеров карт
 - Логирование выполнения функций
+- Чтение транзакций из JSON-файла
+- Конвертация суммы транзакции в рубли
 
 ---
 
-## 🧪 Тестирование
+## Тестирование
 
 ### Запуск всех тестов
 
@@ -325,9 +421,12 @@ pytest tests -v
 pytest tests -v --cov=src --cov-report=html
 
 # Запуск конкретного тестового файла
+```bash
 pytest tests/test_masks.py -v
 pytest tests/test_generators.py -v
 pytest tests/test_decorators.py -v
+pytest tests/test_utils.py -v
+pytest tests/test_external_api.py -v
 ```
 
 ### Тестовое покрытие
@@ -339,6 +438,8 @@ pytest tests/test_decorators.py -v
 - `test_processing.py` - тесты для обработки
 - `test_generators.py` - тесты для генераторов
 - `test_decorators.py` - тесты для декораторов
+- `test_utils.py` - тесты для чтения JSON-файлов
+- `test_external_api.py` - тесты для конвертации валют (Mock и patch)
 
 Посмотреть отчет в консоли или красивый HTML-отчет
 
@@ -348,7 +449,7 @@ pytest tests/test_decorators.py -v
 
 ---
 
-## 🔍 Проверка качества кода
+## Проверка качества кода
 
 ### Запуск всех проверок
 
@@ -384,7 +485,7 @@ pytest tests -v
 
 ---
 
-## 📖 Примеры использования
+## Примеры использования
 
 ### Пример 1: Работа с генераторами
 
@@ -425,9 +526,21 @@ def get_recent_usd_operations(transactions, n=5):
         print(f"{date} - {card}")
 ```
 
----
+### Пример 3: Загрузка из файла и конвертация валюты
 
-## 🎓 Что реализовано в проекте
+```python
+from src.utils import get_transactions_from_json
+from src.external_api import convert_transaction_amount
+
+# Загружаем транзакции из файла
+transactions = get_transactions_from_json("data/operations.json")
+
+# Конвертируем суммы всех транзакций в рубли
+for t in transactions:
+    amount_rub = convert_transaction_amount(t)
+    currency = t["operationAmount"]["currency"]["code"]
+    print(f"ID {t['id']}: {t['operationAmount']['amount']} {currency} = {amount_rub:.2f} RUB")
+```
 
 ### Технические навыки:
 
@@ -439,21 +552,27 @@ def get_recent_usd_operations(transactions, n=5):
 - Работа с датами (модуль datetime)
 - Генераторы и итераторы (yield)
 - Эффективная работа с памятью
+- Логирование
+- Чтение и парсинг JSON-файлов
+- HTTP-запросы к внешним API (библиотека requests)
+- Переменные окружения (python-dotenv)
 
 ### Профессиональные практики:
 
-- Модульная архитектура (4 модуля)
+- Модульная архитектура (7 модулей)
 - Подробная документация (docstrings)
-- Unit-тестирование (50+ тестов)
+- Unit-тестирование (80+ тестов)
+- Мокирование внешних зависимостей (Mock и patch)
 - Фикстуры pytest
 - Параметризация тестов
 - Соответствие PEP 8
 - Управление зависимостями (Poetry)
 - Контроль версий (Git)
+- Защита чувствительных данных (.env)
 
 ---
 
-## 🛡️ Безопасность данных
+## Безопасность данных
 
 Проект следует лучшим практикам защиты конфиденциальных данных:
 
@@ -462,15 +581,16 @@ def get_recent_usd_operations(transactions, n=5):
 - **Не храним** - функции не сохраняют оригинальные данные
 - **Только обработка** - фокус на преобразовании, а не хранении
 - **Эффективность** - генераторы не загружают всё в память
+- **Защита ключей** - API-ключи хранятся в `.env`, не попадают в репозиторий
 
 ---
 
-## 💡 Зачем генераторы?
+## Зачем генераторы?
 
 ### Проблема с обычными функциями:
 
 ```python
-# ❌ Загружает ВСЕ результаты в память сразу
+# Загружает ВСЕ результаты в память сразу
 def get_all_usd(transactions):
     result = []
     for t in transactions:
@@ -482,7 +602,7 @@ def get_all_usd(transactions):
 ### Решение через генератор:
 
 ```python
-# ✅ Выдаёт по одному элементу, экономит память
+# Выдаёт по одному элементу, экономит память
 def filter_by_currency(transactions, currency):
     for t in transactions:
         if t['currency'] == currency:
@@ -491,18 +611,21 @@ def filter_by_currency(transactions, currency):
 
 **Преимущества:**
 
-- 🚀 Меньше использует памяти
-- ⚡ Начинает работу мгновенно (не ждёт обработки всех данных)
-- 🔄 Можно остановить в любой момент
+- Меньше использует памяти
+- Начинает работу мгновенно (не ждёт обработки всех данных)
+- Можно остановить в любой момент
 
 ---
 
-## 🔗 Полезные ссылки
+## Полезные ссылки
 
 - [Документация Python](https://docs.python.org/3/)
 - [Poetry Documentation](https://python-poetry.org/docs/)
 - [PEP 8 Style Guide](https://pep8.org/)
 - [pytest Documentation](https://docs.pytest.org/)
+- [Exchange Rates Data API](https://apilayer.com/marketplace/exchangerates_data-api)
+- [python-dotenv Documentation](https://pypi.org/project/python-dotenv/)
+- [unittest.mock Documentation](https://docs.python.org/3/library/unittest.mock.html)
 - [PCI DSS Requirements](https://www.pcisecuritystandards.org/)
 - [Python Testing with pytest (Brian Okken)](https://tisten.ir/blog/wp-content/uploads/2019/01/Python-Testing-with-pytest-Pragmatic-Bookshelf-2017-Brian-Okken.pdf)
 - [Pytest-Cheatsheet](https://github.com/mananrg/Pytest-Cheatsheet)
