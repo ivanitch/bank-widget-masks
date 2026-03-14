@@ -28,42 +28,34 @@ def get_transactions_from_json(file_path: str) -> list[dict[str, Any]]:
     return data
 
 
-def log_message(message: str, filename: Optional[str]) -> None:
+def log_message(message: str, filename: Optional[str] = None) -> None:
     """
-    функция для вывода лога
+    Функция для вывода лога.
 
-    Аргументы:
-        message (str): Сообщение для логирования.
-        filename (Optional[str]): Имя файла или None для консоли.
+    :param message: Сообщение для логирования.
+    :param filename: Имя файла или None для вывода в консоль.
     """
     if filename is None:
-        # Вывод в консоль
         print(message)
     else:
-        # Запись в файл
         write_to_file(message, filename)
 
 
 def write_to_file(message: str, filename: str) -> None:
     """
-    функция для записи в лог-файл
+    Функция для записи сообщения в лог-файл.
 
-    Аргументы:
-        message (str): Сообщение для записи.
-        filename (str): Имя файла.
+    :param message: Сообщение для записи.
+    :param filename: Имя файла.
     """
-    # Определяем пути
     src_path = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(src_path)
     log_dir = os.path.join(project_root, "log")
 
-    # Создаём директорию для логов, если её нет
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)
 
-    # Полный путь к лог-файлу
     log_file = os.path.join(log_dir, filename)
 
-    # Записываем в файл
     with open(log_file, "a", encoding="utf-8") as f:
         f.write(f"{message}\n")
