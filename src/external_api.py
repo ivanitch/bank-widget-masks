@@ -1,9 +1,10 @@
 import os
-from src.utils import log_message
 from typing import Any
 
 import requests
 from dotenv import load_dotenv
+
+from src.utils import log_message
 
 load_dotenv()
 
@@ -37,8 +38,7 @@ def convert_transaction_amount(transaction: dict[str, Any]) -> float:
     if currency_code not in ("USD", "EUR"):
         raise ValueError(f"Неподдерживаемая валюта: {currency_code}")
 
-    converted = _fetch_converted_amount(amount, currency_code, "RUB")
-    return converted
+    return _fetch_converted_amount(amount, currency_code, "RUB")
 
 
 def _fetch_converted_amount(amount: float, from_currency: str, to_currency: str) -> float:
