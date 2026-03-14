@@ -12,3 +12,4 @@ __pycache__/
 
 # Testing
 /test.py
+/log/
