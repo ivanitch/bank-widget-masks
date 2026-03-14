@@ -6,10 +6,6 @@ from unittest.mock import mock_open, patch
 from src.utils import get_transactions_from_json
 
 
-# ---------------------------------------------------------------------------
-# Фикстуры
-# ---------------------------------------------------------------------------
-
 SAMPLE_TRANSACTIONS = [
     {
         "id": 1,
