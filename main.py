@@ -1,11 +1,15 @@
-from src.processing import filter_by_state, sort_by_date
-from src.widget import get_date, mask_account_card
+from unittest.mock import MagicMock, patch
+
+from src.decorators import log
+from src.external_api import convert_transaction_amount
 from src.generators import (
+    card_number_generator,
     filter_by_currency,
     transaction_descriptions,
-    card_number_generator,
 )
-from src.decorators import log
+from src.processing import filter_by_state, sort_by_date
+from src.utils import get_transactions_from_json
+from src.widget import get_date, mask_account_card
 
 
 def main():
@@ -64,21 +68,18 @@ def main():
         print("=" * 70)
         print()
 
-        # Маскировка номера карты
         card = "Visa Platinum 7000792289606361"
         masked_card = mask_account_card(card)
         print(f"Исходная карта:        {card}")
         print(f"Замаскированная карта: {masked_card}")
         print()
 
-        # Маскировка номера счета
         account = "Счет 73654108430135874305"
         masked_account = mask_account_card(account)
         print(f"Исходный счет:         {account}")
         print(f"Замаскированный счет:  {masked_account}")
         print()
 
-        # Преобразование даты из ISO-формата в формат ДД.ММ.ГГГГ
         date_iso = "2026-01-21T02:26:18.671407"
         date_formatted = get_date(date_iso)
         print(f"Дата ISO:              {date_iso}")
@@ -92,7 +93,6 @@ def main():
         print("📋 Фильтрация операций по статусу")
         print("-" * 70)
 
-        # Фильтрация выполненных операций
         executed_ops = filter_by_state(processing_operations, state="EXECUTED")
         print(f"Всего операций: {len(processing_operations)}")
         print(f"Выполненных операций (EXECUTED): {len(executed_ops)}")
@@ -105,7 +105,6 @@ def main():
 
         print("📅 Сортировка операций по дате")
         print("-" * 70)
-        # Сортировка по возрастанию (сначала старые)
         sorted_asc = sort_by_date(processing_operations, reverse=False)
         print("Сортировка по возрастанию (от старых к новым):")
         for op in sorted_asc:
@@ -120,7 +119,6 @@ def main():
         print("💱 Фильтрация транзакций по валюте (USD)")
         print("-" * 70)
 
-        # Фильтрация по валюте USD
         usd_transactions = filter_by_currency(generator_transactions, "USD")
         usd_list = list(usd_transactions)
         print(f"Найдено USD-транзакций: {len(usd_list)}")
@@ -149,7 +147,6 @@ def main():
         print("=" * 70)
         print()
 
-        # Функции с декораторами для демонстрации
         @log()
         def transfer_money(amount, from_account, to_account):
             """Перевод денег между счетами (логирование в консоль)."""
@@ -196,6 +193,74 @@ def main():
             print(f"Поймана ошибка: {e}")
         print()
 
+        # ---------------------------------------------------------------
+        print("=" * 70)
+        print("ДЕМОНСТРАЦИЯ МОДУЛЯ UTILS")
+        print("=" * 70)
+        print()
+        print("📂 Чтение транзакций из JSON-файла")
+        print("-" * 70)
+
+        transactions = get_transactions_from_json("data/operations.json")
+        print(f"Загружено транзакций из data/operations.json: {len(transactions)}")
+        for t in transactions:
+            amount = t["operationAmount"]["amount"]
+            code = t["operationAmount"]["currency"]["code"]
+            date = get_date(t["date"])
+            print(f"  • ID: {t['id']}, Дата: {date}, Сумма: {amount} {code}, Статус: {t['state']}")
+        print()
+
+        # ---------------------------------------------------------------
+        print("=" * 70)
+        print("ДЕМОНСТРАЦИЯ МОДУЛЯ EXTERNAL_API")
+        print("=" * 70)
+        print()
+        print("💱 Конвертация суммы транзакции в рубли")
+        print("-" * 70)
+
+        # Ищем транзакции по валюте, не полагаясь на порядок в файле
+        rub_t = next(
+            (t for t in transactions if t["operationAmount"]["currency"]["code"] == "RUB"),
+            None,
+        )
+        usd_t = next(
+            (t for t in transactions if t["operationAmount"]["currency"]["code"] == "USD"),
+            None,
+        )
+
+        if rub_t:
+            rub_amount = convert_transaction_amount(rub_t)
+            print(
+                f"RUB-транзакция ID {rub_t['id']}: "
+                f"{rub_t['operationAmount']['amount']} RUB → {rub_amount:.2f} руб. "
+                f"(конвертация не нужна)"
+            )
+        else:
+            print("RUB-транзакций в файле не найдено")
+        print()
+
+        # USD/EUR конвертация с мок-ответом API
+        if usd_t:
+            original_amount = float(usd_t["operationAmount"]["amount"])
+            mocked_rub_result = round(original_amount * 91.5, 2)  # условный курс для демо
+
+            mock_api_response = MagicMock()
+            mock_api_response.json.return_value = {"success": True, "result": mocked_rub_result}
+            mock_api_response.raise_for_status = MagicMock()
+
+            with patch("src.external_api.requests.get", return_value=mock_api_response):
+                with patch("src.external_api.EXCHANGE_RATES_API_KEY", "demo_key"):
+                    usd_amount = convert_transaction_amount(usd_t)
+
+            print(
+                f"USD-транзакция ID {usd_t['id']}: "
+                f"{usd_t['operationAmount']['amount']} USD → {usd_amount:,.2f} руб. "
+                f"(мок API, курс ~91.5)"
+            )
+        else:
+            print("USD-транзакций в файле не найдено")
+        print()
+
         print("=" * 70)
         print("✅ Демонстрация завершена")
         print("=" * 70)
@@ -204,7 +269,6 @@ def main():
         print(f"❌ Ошибка: {e}")
     except Exception as e:
         print(f"❌ Непредвиденная ошибка: {e}")
-
 
 if __name__ == "__main__":
     main()
