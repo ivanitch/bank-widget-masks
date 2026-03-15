@@ -1,10 +1,9 @@
 import json
-import os
-import pytest
 from unittest.mock import mock_open, patch
 
-from src.utils import get_transactions_from_json
+import pytest
 
+from src.utils import get_transactions_from_json
 
 SAMPLE_TRANSACTIONS = [
     {
@@ -18,6 +17,7 @@ SAMPLE_TRANSACTIONS = [
         "operationAmount": {"amount": "200.00", "currency": {"code": "USD"}},
     },
 ]
+
 
 def test_returns_list_of_dicts(tmp_path: pytest.TempPathFactory) -> None:
     """Функция возвращает список словарей при корректном JSON-файле."""
@@ -39,6 +39,7 @@ def test_returns_correct_data(tmp_path: pytest.TempPathFactory) -> None:
     result = get_transactions_from_json(str(json_file))
 
     assert result == SAMPLE_TRANSACTIONS
+
 
 def test_empty_file_returns_empty_list(tmp_path: pytest.TempPathFactory) -> None:
     """Пустой JSON-файл (пустой список) возвращает пустой список."""

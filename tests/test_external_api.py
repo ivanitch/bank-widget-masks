@@ -1,7 +1,9 @@
-import pytest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
-from src.external_api import convert_transaction_amount, _fetch_converted_amount
+import pytest
+
+from src.external_api import convert_transaction_amount
+
 
 @pytest.fixture
 def rub_transaction() -> dict:

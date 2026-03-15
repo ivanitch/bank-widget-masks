@@ -5,7 +5,9 @@
 """
 
 import os
+
 import pytest
+
 from src.decorators import log
 
 
@@ -134,12 +136,15 @@ def test_log_decorator_preserves_exception(error_function):
     assert exc_info.type == ZeroDivisionError
 
 
-@pytest.mark.parametrize("x, y, expected", [
-    (1, 2, 3),
-    (10, 20, 30),
-    (-5, 5, 0),
-    (0, 0, 0),
-])
+@pytest.mark.parametrize(
+    "x, y, expected",
+    [
+        (1, 2, 3),
+        (10, 20, 30),
+        (-5, 5, 0),
+        (0, 0, 0),
+    ],
+)
 def test_log_decorator_parametrized(x, y, expected, log_file_path):
     """Параметризованный тест для разных входных данных."""
 
@@ -234,6 +239,7 @@ def test_log_decorator_with_print_statements(capsys, log_file_path):
 
 
 # ─── Тесты логирования в консоль ──────────────────────────────────────────────
+
 
 def test_log_to_console_success(capsys):
     """Декоратор выводит в консоль при filename=None."""

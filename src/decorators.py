@@ -2,9 +2,9 @@
 Модуль decorators - декораторы для логирования выполнения функций.
 """
 
-import os
-from typing import Any, Callable, Optional
 from functools import wraps
+from typing import Any, Callable, Optional
+
 from src.utils import log_message
 
 
@@ -68,10 +68,7 @@ def log(filename: Optional[str] = None) -> Callable:
             except Exception as e:
                 # Логируем ошибку
                 error_type = type(e).__name__
-                error_message = (
-                    f"{func.__name__} error: {error_type}. "
-                    f"Inputs: {args}, {kwargs}"
-                )
+                error_message = f"{func.__name__} error: {error_type}. " f"Inputs: {args}, {kwargs}"
                 log_message(error_message, filename)
 
                 # Пробрасываем исключение дальше
