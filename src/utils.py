@@ -1,6 +1,10 @@
-import os
 import json
+import os
 from typing import Any, Optional
+
+from src.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def get_transactions_from_json(file_path: str) -> list[dict[str, Any]]:
@@ -15,15 +19,17 @@ def get_transactions_from_json(file_path: str) -> list[dict[str, Any]]:
         with open(file_path, "r", encoding="utf-8") as f:
             data = json.load(f)
     except FileNotFoundError:
-        log_message(f"Файл не найден: {file_path}")
+        logger.error("Файл не найден: %s", file_path)
         return []
     except json.JSONDecodeError:
-        log_message(f"Не удалось декодировать JSON из файла: {file_path}")
+        logger.error("Не удалось декодировать JSON из файла: %s", file_path)
         return []
 
     if not isinstance(data, list):
-        log_message(f"JSON-файл не содержит список: {file_path}")
+        logger.error("JSON-файл не содержит список: %s", file_path)
         return []
+
+    logger.info("Успешно загружено %d транзакций из файла: %s", len(data), file_path)
 
     return data
 
@@ -50,7 +56,7 @@ def write_to_file(message: str, filename: str) -> None:
     """
     src_path = os.path.dirname(os.path.abspath(__file__))
     project_root = os.path.dirname(src_path)
-    log_dir = os.path.join(project_root, "log")
+    log_dir = os.path.join(project_root, "logs")
 
     if not os.path.exists(log_dir):
         os.makedirs(log_dir)

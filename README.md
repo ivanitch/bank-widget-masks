@@ -18,6 +18,7 @@ IT-отдел крупного банка разрабатывает новый 
 6. **Декорировать функции** - через декораторы
 7. **Читать данные из JSON-файлов** - загрузка списка транзакций из файла
 8. **Конвертировать валюты** - получение актуального курса через внешний API
+9. **Логировать события** - запись в файл с временной меткой, модулем и уровнем
 
 Проект демонстрирует практическое применение Python для решения реальных задач финтех-индустрии с соблюдением стандартов
 безопасности данных (PCI DSS).
@@ -59,6 +60,13 @@ IT-отдел крупного банка разрабатывает новый 
 
 - **Конвертация суммы транзакции в рубли** - возвращает сумму в RUB; для USD и EUR обращается к Exchange Rates Data API за актуальным курсом
 
+### Модуль `logger.py` - Настройка логирования
+
+- **Фабрика логеров** - создаёт и возвращает настроенный логер для указанного модуля
+- Логи записываются в папку `logs/` в корне проекта в файлы `<имя_модуля>.log`
+- Формат записи: `дата-время - модуль - уровень - сообщение`
+- Файл перезаписывается при каждом запуске
+
 ---
 
 ## Структура проекта
@@ -74,7 +82,8 @@ bank-widget-masks/
 │   ├── generators.py             # Генераторы для работы с данными
 │   ├── decorators.py             # Декораторы
 │   ├── utils.py                  # Утилиты: чтение JSON-файлов
-│   └── external_api.py           # Конвертация валют через внешний API
+│   ├── external_api.py           # Конвертация валют через внешний API
+│   └── logger.py                 # Фабрика логеров
 │
 ├── tests/                        # Тесты проекта
 │   ├── __init__.py               # Инициализация пакета тестов
@@ -89,8 +98,10 @@ bank-widget-masks/
 ├── data/                         # Данные проекта
 │   └── operations.json           # Файл с банковскими операциями
 │
-├── log/                          # Директория для лог-файлов
-│   └── app.log                   # Лог по умолчанию
+├── logs/                         # Директория для лог-файлов (создаётся автоматически)
+│   ├── masks.log                 # Логи модуля masks
+│   ├── utils.log                 # Логи модуля utils
+│   └── operations.log            # Логи декоратора @log
 │
 ├── main.py                       # Главный файл с демонстрацией
 ├── pyproject.toml                # Конфигурация Poetry и зависимостей
@@ -115,7 +126,6 @@ bank-widget-masks/
 ### Шаг 1: Клонирование репозитория
 
 ```bash
-# Клонируйте репозиторий
 git clone git@github.com:ivanitch/bank-widget-masks.git
 cd bank-widget-masks
 ```
@@ -123,10 +133,7 @@ cd bank-widget-masks
 ### Шаг 2: Установка зависимостей
 
 ```bash
-# Активируйте виртуальное окружение Poetry
 poetry shell
-
-# Установите все зависимости проекта
 poetry install
 ```
 
@@ -139,7 +146,6 @@ poetry install
 ### Шаг 3: Настройка переменных окружения
 
 ```bash
-# Создайте файл .env из шаблона
 cp .env.template .env
 ```
 
@@ -269,8 +275,6 @@ for t in usd_transactions:
     print(t['id'])
 ```
 
----
-
 #### `transaction_descriptions(transactions: list[dict]) -> Iterator[str]`
 
 Генератор описаний банковских транзакций. Возвращает **итератор** строк.
@@ -285,8 +289,6 @@ print(next(descriptions))  # Перевод организации
 print(next(descriptions))  # Перевод с карты на карту
 ```
 
----
-
 #### `card_number_generator(start: int, stop: int) -> Iterator[str]`
 
 Генератор номеров банковских карт в формате XXXX XXXX XXXX XXXX.
@@ -300,34 +302,30 @@ for card in card_number_generator(1, 5):
     print(card)
 # 0000 0000 0000 0001
 # 0000 0000 0000 0002
-# 0000 0000 0000 0003
-# 0000 0000 0000 0004
-# 0000 0000 0000 0005
+# ...
 ```
-
-**Диапазон:** от 0000 0000 0000 0001 до 9999 9999 9999 9999.
 
 ---
 
 ### Модуль `decorators.py`
 
-#### `@log(filename="app.log")`
+#### `log(filename: str | None = None)`
 
-Декоратор для автоматического логирования выполнения функций.
+Декоратор для логирования вызова функции. При `filename=None` выводит в консоль,
+при указании имени файла — записывает в `logs/<filename>`.
 
-**Примеры:**
+**Пример:**
 
 ```python
 from src.decorators import log
 
+@log()
+def add(a, b):
+    return a + b
 
-@log(filename="mylog.txt")
-def my_function(x, y):
-    return x + y
-
-
-my_function(1, 2)  # Успешно
-# В mylog.txt: my_function stop
+@log(filename="operations.log")
+def multiply(a, b):
+    return a * b
 ```
 
 ---
@@ -336,8 +334,8 @@ my_function(1, 2)  # Успешно
 
 #### `get_transactions_from_json(file_path: str) -> list[dict]`
 
-Читает JSON-файл и возвращает список словарей с данными о транзакциях.
-Если файл не найден, пустой, содержит не список или невалидный JSON — возвращает пустой список.
+Читает JSON-файл и возвращает список транзакций. При отсутствии файла,
+невалидном JSON или не-списковом содержимом возвращает пустой список.
 
 **Пример:**
 
@@ -347,7 +345,6 @@ from src.utils import get_transactions_from_json
 transactions = get_transactions_from_json("data/operations.json")
 print(len(transactions))  # 5
 
-# Файл не существует — безопасный возврат
 empty = get_transactions_from_json("data/missing.json")
 print(empty)  # []
 ```
@@ -366,7 +363,6 @@ print(empty)  # []
 ```python
 from src.external_api import convert_transaction_amount
 
-# RUB — без обращения к API
 rub_transaction = {
     "operationAmount": {
         "amount": "5000.00",
@@ -374,18 +370,30 @@ rub_transaction = {
     }
 }
 print(convert_transaction_amount(rub_transaction))  # 5000.0
-
-# USD — с конвертацией через API
-usd_transaction = {
-    "operationAmount": {
-        "amount": "100.00",
-        "currency": {"name": "USD", "code": "USD"}
-    }
-}
-print(convert_transaction_amount(usd_transaction))  # например, 9150.0
 ```
 
 Требует заполненного `EXCHANGE_RATES_API_KEY` в файле `.env`.
+
+---
+
+### Модуль `logger.py`
+
+#### `get_logger(name: str) -> logging.Logger`
+
+Возвращает настроенный логер для модуля с именем `name`.
+Файл лога создаётся в `logs/<name>.log` и перезаписывается при каждом запуске.
+
+**Пример:**
+
+```python
+from src.logger import get_logger
+
+logger = get_logger("my_module")
+logger.info("Операция выполнена")
+logger.error("Произошла ошибка: %s", error)
+```
+
+---
 
 ### Демонстрация всех функций
 
@@ -414,13 +422,15 @@ python main.py
 ```bash
 pytest tests
 
-# Запуск всех тестов с подробным выводом
+# С подробным выводом
 pytest tests -v
 
-# Запуск с покрытием кода
+# С покрытием кода
 pytest tests -v --cov=src --cov-report=html
+```
 
-# Запуск конкретного тестового файла
+### Запуск конкретного тестового файла
+
 ```bash
 pytest tests/test_masks.py -v
 pytest tests/test_generators.py -v
@@ -441,17 +451,15 @@ pytest tests/test_external_api.py -v
 - `test_utils.py` - тесты для чтения JSON-файлов
 - `test_external_api.py` - тесты для конвертации валют (Mock и patch)
 
-Посмотреть отчет в консоли или красивый HTML-отчет
+Посмотреть отчет в консоли или HTML-отчет:
 
-- `coverage report` - читает `.coverage` и выводит таблицу в консоль
-- `coverage html` - читает `.coverage` и создает папку `htmlcov` с интерактивным сайтом.
-  Открыть сайт можно по адресу `path/to/project/htmlcov/index.html`
+- `coverage report` - выводит таблицу в консоль
+- `coverage html` - создаёт папку `htmlcov` с интерактивным сайтом.
+  Открыть: `path/to/project/htmlcov/index.html`
 
 ---
 
 ## Проверка качества кода
-
-### Запуск всех проверок
 
 ```bash
 # Проверка стиля кода (PEP 8)
@@ -467,7 +475,7 @@ isort main.py src
 mypy main.py src
 ```
 
-### Запуск всех проверок одной командой
+### Все проверки одной командой
 
 ```bash
 flake8 main.py src && \
@@ -477,7 +485,7 @@ mypy main.py src && \
 pytest tests -v
 ```
 
-Или можно запустить скрипт:
+Или через скрипт:
 
 ```bash
 ./lint.sh
@@ -492,12 +500,10 @@ pytest tests -v
 ```python
 from src.generators import filter_by_currency, card_number_generator
 
-# Эффективная фильтрация по валюте (не загружает всё в память)
 usd_transactions = filter_by_currency(all_transactions, 'USD')
 for t in usd_transactions:
     print(f"USD операция: {t['id']}")
 
-# Генерация тестовых номеров карт
 for card in card_number_generator(1, 100):
     print(card)  # 0000 0000 0000 0001, 0000 0000 0000 0002, ...
 ```
@@ -510,16 +516,11 @@ from src.processing import filter_by_state, sort_by_date
 from src.generators import filter_by_currency
 
 
-# Получить последние 5 USD-операций с маскированием
 def get_recent_usd_operations(transactions, n=5):
-    # Фильтруем по валюте
     usd_ops = list(filter_by_currency(transactions, 'USD'))
-    # Сортируем по дате
     sorted_ops = sort_by_date(usd_ops, reverse=True)
-    # Берём последние N
     recent = sorted_ops[:n]
 
-    # Выводим с маскировкой
     for op in recent:
         date = get_date(op['date'])
         card = mask_account_card(op.get('from', ''))
@@ -532,17 +533,17 @@ def get_recent_usd_operations(transactions, n=5):
 from src.utils import get_transactions_from_json
 from src.external_api import convert_transaction_amount
 
-# Загружаем транзакции из файла
 transactions = get_transactions_from_json("data/operations.json")
 
-# Конвертируем суммы всех транзакций в рубли
 for t in transactions:
     amount_rub = convert_transaction_amount(t)
     currency = t["operationAmount"]["currency"]["code"]
     print(f"ID {t['id']}: {t['operationAmount']['amount']} {currency} = {amount_rub:.2f} RUB")
 ```
 
-### Технические навыки:
+---
+
+## Технические навыки
 
 - Работа со строками (slicing, форматирование)
 - Функции с параметрами по умолчанию
@@ -552,14 +553,14 @@ for t in transactions:
 - Работа с датами (модуль datetime)
 - Генераторы и итераторы (yield)
 - Эффективная работа с памятью
-- Логирование
+- Логирование (модуль logging)
 - Чтение и парсинг JSON-файлов
 - HTTP-запросы к внешним API (библиотека requests)
 - Переменные окружения (python-dotenv)
 
-### Профессиональные практики:
+## Профессиональные практики
 
-- Модульная архитектура (7 модулей)
+- Модульная архитектура (8 модулей)
 - Подробная документация (docstrings)
 - Unit-тестирование (80+ тестов)
 - Мокирование внешних зависимостей (Mock и patch)
@@ -590,30 +591,24 @@ for t in transactions:
 ### Проблема с обычными функциями:
 
 ```python
-# Загружает ВСЕ результаты в память сразу
 def get_all_usd(transactions):
     result = []
     for t in transactions:
         if t['currency'] == 'USD':
             result.append(t)
-    return result  # Список из миллионов элементов в памяти!
+    return result  # Список из миллионов элементов в памяти
 ```
 
 ### Решение через генератор:
 
 ```python
-# Выдаёт по одному элементу, экономит память
 def filter_by_currency(transactions, currency):
     for t in transactions:
         if t['currency'] == currency:
             yield t  # Генерирует элементы по требованию
 ```
 
-**Преимущества:**
-
-- Меньше использует памяти
-- Начинает работу мгновенно (не ждёт обработки всех данных)
-- Можно остановить в любой момент
+Преимущества: меньше памяти, мгновенный старт, можно остановить в любой момент.
 
 ---
 
@@ -630,7 +625,3 @@ def filter_by_currency(transactions, currency):
 - [Python Testing with pytest (Brian Okken)](https://tisten.ir/blog/wp-content/uploads/2019/01/Python-Testing-with-pytest-Pragmatic-Bookshelf-2017-Brian-Okken.pdf)
 - [Pytest-Cheatsheet](https://github.com/mananrg/Pytest-Cheatsheet)
 - [Раздел про тестирование в Hitchhiker's Guide to Python](https://docs.python-guide.org/writing/tests/)
-
----
-
-*Этот проект создан с ❤️ для изучения Python и best practices разработки*
