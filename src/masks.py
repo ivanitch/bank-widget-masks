@@ -5,6 +5,10 @@
 и счетов, скрывая часть цифр для защиты конфиденциальной информации.
 """
 
+from src.logger import get_logger
+
+logger = get_logger(__name__)
+
 
 def get_mask_card_number(card_number: str) -> str:
     """
@@ -28,19 +32,25 @@ def get_mask_card_number(card_number: str) -> str:
     clean_number = str_cart_number.replace(" ", "")
 
     if not clean_number or not str(clean_number):
+        logger.error("Номер карты отсутствует или пуст")
         raise ValueError("Номер карты отсутствует или пуст")
 
     if len(clean_number) != 16:
+        logger.error("Номер карты должен содержать 16 цифр, получено: %d", len(clean_number))
         raise ValueError("Номер карты должен содержать 16 цифр")
 
     if not clean_number.isdigit():
+        logger.error("Номер карты содержит недопустимые символы: %s", clean_number)
         raise ValueError("Номер карты должен содержать только цифры")
 
     first_block = clean_number[:4]  # Первые 4 цифры: "7000"
     second_partial = clean_number[4:6]  # Следующие 2 цифры: "79"
     last_block = clean_number[-4:]  # Последние 4 цифры: "6361"
 
-    return f"{first_block} {second_partial}** **** {last_block}"
+    result = f"{first_block} {second_partial}** **** {last_block}"
+    logger.info("Номер карты успешно замаскирован: %s", result)
+
+    return result
 
 
 def get_mask_account(account_number: str) -> str:
@@ -70,15 +80,21 @@ def get_mask_account(account_number: str) -> str:
     clean_number = str_account_number.replace(" ", "")
 
     if not clean_number or not str(clean_number):
+        logger.error("Номер счета отсутствует или пуст")
         raise ValueError("Номер счета отсутствует или пуст")
 
     if len(clean_number) < 4:
+        logger.error("Номер счета слишком короткий: %d цифр", len(clean_number))
         raise ValueError("Номер счета должен содержать минимум 4 цифры")
 
     if not clean_number.isdigit():
+        logger.error("Номер счета содержит недопустимые символы: %s", clean_number)
         raise ValueError("Номер счета должен содержать только цифры")
 
     # Извлекаем последние 4 цифры
     last_four = clean_number[-4:]
 
-    return f"**{last_four}"
+    result = f"**{last_four}"
+    logger.info("Номер счета успешно замаскирован: %s", result)
+
+    return result
