@@ -17,8 +17,9 @@ IT-отдел крупного банка разрабатывает новый 
 5. **Эффективно обрабатывать большие объёмы данных** - через генераторы
 6. **Декорировать функции** - через декораторы
 7. **Читать данные из JSON-файлов** - загрузка списка транзакций из файла
-8. **Конвертировать валюты** - получение актуального курса через внешний API
-9. **Логировать события** - запись в файл с временной меткой, модулем и уровнем
+8. **Читать данные из CSV и Excel** - загрузка транзакций через pandas
+9. **Конвертировать валюты** - получение актуального курса через внешний API
+10. **Логировать события** - запись в файл с временной меткой, модулем и уровнем
 
 Проект демонстрирует практическое применение Python для решения реальных задач финтех-индустрии с соблюдением стандартов
 безопасности данных (PCI DSS).
@@ -52,9 +53,50 @@ IT-отдел крупного банка разрабатывает новый 
 
 - **Логирование процесса выполнения функций** - записывает в файл или выводит в консоль результат выполнения функции
 
+### Модуль `file_reader.py`
+
+#### `get_transactions_from_csv(file_path: str) -> list[dict]`
+
+Читает финансовые операции из CSV-файла (разделитель — `;`).
+
+**Пример:**
+
+```python
+from src.file_reader import get_transactions_from_csv
+
+transactions = get_transactions_from_csv("data/transactions.csv")
+print(len(transactions))         # 5
+print(transactions[0]["state"])  # EXECUTED
+```
+
+#### `get_transactions_from_excel(file_path: str) -> list[dict]`
+
+Читает финансовые операции из Excel-файла (`.xlsx`).
+
+**Пример:**
+
+```python
+from src.file_reader import get_transactions_from_excel
+
+transactions = get_transactions_from_excel("data/transactions.xlsx")
+print(len(transactions))                  # 5
+print(transactions[0]["currency_code"])   # USD
+```
+
+Ожидаемые колонки: `id`, `state`, `date`, `amount`, `currency_name`, `currency_code`, `from`, `to`, `description`.
+Отсутствующие значения конвертируются в `None`. При ошибке чтения возвращается пустой список.
+
+---
+
 ### Модуль `utils.py` - Утилиты для работы с данными
 
 - **Чтение транзакций из JSON-файла** - загружает список операций, возвращает пустой список при отсутствии файла или некорректных данных
+
+### Модуль `file_reader.py` - Чтение CSV и Excel
+
+- **Чтение транзакций из CSV-файла** — разбор файла с разделителем `;`, возвращает список словарей
+- **Чтение транзакций из Excel-файла** — разбор `.xlsx`-файла через pandas, возвращает список словарей
+- В обоих случаях при отсутствии файла или ошибке чтения возвращается пустой список
 
 ### Модуль `external_api.py` - Работа с внешним API
 
@@ -82,6 +124,7 @@ bank-widget-masks/
 │   ├── generators.py             # Генераторы для работы с данными
 │   ├── decorators.py             # Декораторы
 │   ├── utils.py                  # Утилиты: чтение JSON-файлов
+│   ├── file_reader.py            # Чтение транзакций из CSV и Excel
 │   ├── external_api.py           # Конвертация валют через внешний API
 │   └── logger.py                 # Фабрика логеров
 │
@@ -93,6 +136,7 @@ bank-widget-masks/
 │   ├── test_generators.py        # Тесты для generators
 │   ├── test_decorators.py        # Тесты для decorators
 │   ├── test_utils.py             # Тесты для utils
+│   ├── test_file_reader.py       # Тесты для file_reader (CSV и Excel)
 │   └── test_external_api.py      # Тесты для external_api
 │
 ├── data/                         # Данные проекта
@@ -118,6 +162,7 @@ bank-widget-masks/
 
 - **Python**: 3.11 или выше
 - **Poetry**: для управления зависимостями
+- **pandas** и **openpyxl**: для чтения CSV и Excel-файлов
 
 ---
 
@@ -449,6 +494,7 @@ pytest tests/test_external_api.py -v
 - `test_generators.py` - тесты для генераторов
 - `test_decorators.py` - тесты для декораторов
 - `test_utils.py` - тесты для чтения JSON-файлов
+- `test_file_reader.py` - тесты для чтения CSV и Excel (Mock и patch)
 - `test_external_api.py` - тесты для конвертации валют (Mock и patch)
 
 Посмотреть отчет в консоли или HTML-отчет:
