@@ -1,176 +1,156 @@
-from src.decorators import log
-from src.external_api import convert_transaction_amount
-from src.generators import card_number_generator, filter_by_currency, transaction_descriptions
+import sys
+
+from src.file_reader import get_transactions_from_csv, get_transactions_from_excel
 from src.processing import filter_by_state, sort_by_date
+from src.search import process_bank_search
 from src.utils import get_transactions_from_json
 from src.widget import get_date, mask_account_card
 
+VALID_STATUSES = ("EXECUTED", "CANCELED", "PENDING")
+
+# Кодировка stdin: пробуем utf-8, fallback на cp1251 (Windows/кириллица)
+_STDIN_ENCODING = "utf-8"
+
+
+def _detect_encoding() -> str:
+    """Определяет рабочую кодировку stdin один раз при старте."""
+    enc = getattr(sys.stdin, "encoding", None) or ""
+    if enc.lower().replace("-", "") in ("cp1251", "cp866", "windows1251"):
+        return enc
+    return "utf-8"
+
+
+_STDIN_ENCODING = _detect_encoding()
+
+
+def _input(prompt: str = "") -> str:
+    """
+    Читает строку из stdin.buffer и декодирует с автоопределением кодировки.
+    Если utf-8 не работает — пробует cp1251.
+    """
+    sys.stdout.write(prompt)
+    sys.stdout.flush()
+    raw = sys.stdin.buffer.readline().rstrip(b"\r\n")
+    try:
+        return raw.decode("utf-8")
+    except UnicodeDecodeError:
+        return raw.decode("cp1251")
+
+
+def _get_transaction_currency(t: dict) -> str:
+    if "operationAmount" in t:
+        return t["operationAmount"]["currency"]["code"]
+    return t.get("currency_code", "")
+
+
+def _get_transaction_amount(t: dict) -> str:
+    if "operationAmount" in t:
+        return t["operationAmount"]["amount"]
+    return str(t.get("amount", ""))
+
+
+def _format_transaction(t: dict) -> str:
+    date = get_date(t.get("date", ""))
+    description = t.get("description", "")
+    from_acc = t.get("from", "")
+    to_acc = t.get("to", "")
+    amount = _get_transaction_amount(t)
+    currency = _get_transaction_currency(t)
+
+    lines = [f"{date} {description}"]
+
+    if from_acc and to_acc:
+        lines.append(f"{mask_account_card(from_acc)} -> {mask_account_card(to_acc)}")
+    elif to_acc:
+        lines.append(mask_account_card(to_acc))
+
+    lines.append(f"Сумма: {amount} {currency}")
+    return "\n".join(lines)
+
 
 def main() -> None:
-    processing_operations = [
-        {"id": 414288290, "state": "EXECUTED", "date": "2019-07-03T18:35:29.051309"},
-        {"id": 939719570, "state": "EXECUTED", "date": "2018-06-30T02:08:58.425572"},
-        {"id": 594226727, "state": "CANCELED", "date": "2018-09-12T21:27:25.241689"},
-        {"id": 615064591, "state": "CANCELED", "date": "2018-10-14T08:21:33.419441"},
-        {"id": 142264268, "state": "EXECUTED", "date": "2019-04-04T23:20:05.206878"},
-    ]
+    print("Привет! Добро пожаловать в программу работы с банковскими транзакциями.")
+    print("Выберите необходимый пункт меню:")
+    print("1. Получить информацию о транзакциях из JSON-файла")
+    print("2. Получить информацию о транзакциях из CSV-файла")
+    print("3. Получить информацию о транзакциях из XLSX-файла")
 
-    generator_transactions = [
-        {
-            "id": 939719570,
-            "state": "EXECUTED",
-            "date": "2018-06-30T02:08:58.425572",
-            "operationAmount": {"amount": "9824.07", "currency": {"name": "USD", "code": "USD"}},
-            "description": "Перевод организации",
-            "from": "Счет 75106830613657916952",
-            "to": "Счет 11776614605963066702",
-        },
-        {
-            "id": 895315941,
-            "state": "EXECUTED",
-            "date": "2018-08-19T04:27:37.904916",
-            "operationAmount": {"amount": "56883.54", "currency": {"name": "USD", "code": "USD"}},
-            "description": "Перевод с карты на карту",
-            "from": "Visa Classic 6831982476737658",
-            "to": "Visa Platinum 8990922113665229",
-        },
-        {
-            "id": 594226727,
-            "state": "CANCELED",
-            "date": "2018-09-12T21:27:25.241689",
-            "operationAmount": {"amount": "67314.70", "currency": {"name": "руб.", "code": "RUB"}},
-            "description": "Перевод организации",
-            "from": "Visa Platinum 1246377376343588",
-            "to": "Счет 14211924144426031657",
-        },
-    ]
+    while True:
+        choice = _input("\nПользователь: ").strip()
+        if choice == "1":
+            print("\nДля обработки выбран JSON-файл.")
+            transactions = get_transactions_from_json("data/operations.json")
+            break
+        elif choice == "2":
+            print("\nДля обработки выбран CSV-файл.")
+            transactions = get_transactions_from_csv("data/transactions.csv")
+            break
+        elif choice == "3":
+            print("\nДля обработки выбран XLSX-файл.")
+            transactions = get_transactions_from_excel("data/transactions.xlsx")
+            break
+        else:
+            print(f'Неверный выбор "{choice}". Введите 1, 2 или 3.')
 
-    print("=" * 70)
-    print("МОДУЛЬ WIDGET")
-    print("=" * 70)
+    # Фильтрация по статусу
+    print(
+        "\nВведите статус, по которому необходимо выполнить фильтрацию.\n"
+        f"Доступные для фильтровки статусы: {', '.join(VALID_STATUSES)}"
+    )
+    while True:
+        status_input = _input("\nПользователь: ").strip().upper()
+        if status_input in VALID_STATUSES:
+            print(f'\nОперации отфильтрованы по статусу "{status_input}"')
+            transactions = filter_by_state(transactions, state=status_input)
+            break
+        else:
+            print(f'Статус операции "{status_input}" недоступен.')
+            print(
+                "\nВведите статус, по которому необходимо выполнить фильтрацию.\n"
+                f"Доступные для фильтровки статусы: {', '.join(VALID_STATUSES)}"
+            )
 
-    card = "Visa Platinum 7000792289606361"
-    print(f"Исходная карта:        {card}")
-    print(f"Замаскированная карта: {mask_account_card(card)}")
+    # Сортировка по дате
+    print("\nОтсортировать операции по дате? Да/Нет")
+    sort_answer = _input("Пользователь: ").strip().lower()
+    if sort_answer == "да":
+        print("\nОтсортировать по возрастанию или по убыванию? (1 - по возрастанию / 2 - по убыванию)")
+        while True:
+            order_answer = _input("Пользователь: ").strip()
+            if order_answer == "1":
+                reverse = False
+                break
+            elif order_answer == "2":
+                reverse = True
+                break
+            else:
+                print("Введите 1 (по возрастанию) или 2 (по убыванию).")
+        transactions = sort_by_date(transactions, reverse=reverse)
 
-    account = "Счет 73654108430135874305"
-    print(f"Исходный счет:         {account}")
-    print(f"Замаскированный счет:  {mask_account_card(account)}")
+    # Фильтрация по рублям
+    print("\nВыводить только рублевые транзакции? Да/Нет")
+    rub_answer = _input("Пользователь: ").strip().lower()
+    if rub_answer == "да":
+        transactions = [t for t in transactions if _get_transaction_currency(t) == "RUB"]
 
-    date_iso = "2026-01-21T02:26:18.671407"
-    print(f"Дата ISO:              {date_iso}")
-    print(f"Дата отформатирована:  {get_date(date_iso)}")
+    # Фильтрация по слову в описании
+    print("\nОтфильтровать список транзакций по определенному слову в описании? Да/Нет")
+    search_answer = _input("Пользователь: ").strip().lower()
+    if search_answer == "да":
+        search_word = _input("Введите слово для поиска: ").strip()
+        transactions = process_bank_search(transactions, search_word)
 
-    print()
-    print("=" * 70)
-    print("МОДУЛЬ PROCESSING")
-    print("=" * 70)
+    # Вывод результата
+    print("\nРаспечатываю итоговый список транзакций...")
 
-    executed_ops = filter_by_state(processing_operations, state="EXECUTED")
-    print(f"Всего операций: {len(processing_operations)}, выполненных (EXECUTED): {len(executed_ops)}")
+    if not transactions:
+        print("\nНе найдено ни одной транзакции, подходящей под ваши условия фильтрации")
+        return
 
-    print("\nСортировка по возрастанию:")
-    for op in sort_by_date(processing_operations, reverse=False):
-        print(f"  Дата: {get_date(op['date'])}, ID: {op['id']}, Статус: {op['state']}")
-
-    print()
-    print("=" * 70)
-    print("МОДУЛЬ GENERATORS")
-    print("=" * 70)
-
-    usd_list = list(filter_by_currency(generator_transactions, "USD"))
-    print(f"USD-транзакций: {len(usd_list)}")
-    for t in usd_list:
-        print(f"  ID: {t['id']}, Сумма: {t['operationAmount']['amount']} USD")
-
-    print("\nОписания транзакций:")
-    for i, desc in enumerate(transaction_descriptions(generator_transactions), 1):
-        print(f"  {i}. {desc}")
-
-    print("\nНомера карт (1-5):")
-    for card_num in card_number_generator(1, 5):
-        print(f"  {card_num}")
-
-    print()
-    print("=" * 70)
-    print("МОДУЛЬ DECORATORS")
-    print("=" * 70)
-
-    @log()
-    def transfer_money(amount: float, from_account: str, to_account: str) -> str:
-        return f"Переведено {amount} руб. с {from_account} на {to_account}"
-
-    @log(filename="operations.log")
-    def calculate_commission(amount: float, rate: float = 0.01) -> float:
-        return amount * rate
-
-    @log()
-    def risky_operation(value: float) -> float:
-        if value == 0:
-            raise ValueError("Значение не может быть нулевым")
-        return 100 / value
-
-    print("Логирование в консоль:")
-    result = transfer_money(1000, "Счет1", "Счет2")
-    print(f"  Результат: {result}")
-
-    print("\nЛогирование в файл (logs/operations.log):")
-    commission = calculate_commission(5000, 0.015)
-    print(f"  Комиссия: {commission} руб.")
-
-    print("\nУспешный вызов risky_operation(10):")
-    print(f"  Результат: {risky_operation(10)}")
-
-    print("\nВызов risky_operation(0) с ошибкой:")
-    try:
-        risky_operation(0)
-    except ValueError as e:
-        print(f"  Поймана ошибка: {e}")
-
-    print()
-    print("=" * 70)
-    print("МОДУЛЬ UTILS")
-    print("=" * 70)
-
-    transactions = get_transactions_from_json("data/operations.json")
-    print(f"Загружено транзакций из data/operations.json: {len(transactions)}")
+    print(f"\nВсего банковских операций в выборке: {len(transactions)}\n")
     for t in transactions:
-        print(
-            f"  ID: {t['id']}, Дата: {get_date(t['date'])}, "
-            f"Сумма: {t['operationAmount']['amount']} {t['operationAmount']['currency']['code']}, "
-            f"Статус: {t['state']}"
-        )
-
-    print()
-    print("=" * 70)
-    print("МОДУЛЬ EXTERNAL_API")
-    print("=" * 70)
-
-    rub_t = next(
-        (t for t in transactions if t["operationAmount"]["currency"]["code"] == "RUB"), None
-    )
-    usd_t = next(
-        (t for t in transactions if t["operationAmount"]["currency"]["code"] == "USD"), None
-    )
-
-    if rub_t:
-        rub_amount = convert_transaction_amount(rub_t)
-        print(
-            f"RUB ID {rub_t['id']}: {rub_t['operationAmount']['amount']} RUB "
-            f"-> {rub_amount:.2f} руб. (конвертация не нужна)"
-        )
-
-    if usd_t:
-        usd_amount = convert_transaction_amount(usd_t)
-        print(
-            f"USD ID {usd_t['id']}: {usd_t['operationAmount']['amount']} USD "
-            f"-> {usd_amount:.2f} руб."
-        )
-
-    print()
-    print("=" * 70)
-    print("Демонстрация завершена")
-    print("=" * 70)
+        print(_format_transaction(t))
+        print()
 
 
 if __name__ == "__main__":
